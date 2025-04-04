@@ -1,0 +1,64 @@
+CI/CD Pipeline with Jenkins and Docker
+This project sets up to a continuous integration and continuous deployment (CI/CD) pipeline using Jenkins, Docker and Kubernetes.
+Clone Repo – Pull latest code from Git.
+Build Docker Image – Build your application into a Docker image.
+Run Tests – Optionally, run unit/integration tests.
+Push Image – Push the Docker image to a registry.
+Deploy – Run the container (e.g., on a server or Kubernetes).
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "yourusername/yourapp"
+        TAG = "${env.BUILD_NUMBER}"
+        REGISTRY_CREDENTIALS = 'dockerhub-credentials-id'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your-repo/your-app.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${IMAGE_NAME}:${TAG}")
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                // You can run tests using Docker here, like:
+                // docker.image("${IMAGE_NAME}:${TAG}").inside { sh 'npm test' }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
+                        docker.image("${IMAGE_NAME}:${TAG}").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application...'
+                // Example: SSH into server and run container
+                // sh 'ssh user@server docker run -d yourimage:tag'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up...'
+        }
+    }
+}
